@@ -1,4 +1,5 @@
 #%%
+
 import logging
 
 logging.basicConfig(
@@ -13,11 +14,17 @@ if __name__ == "__main__":
     import argparse
     import textwrap
 
-    desc = """CLI for uploading Vulnerability tiled images into respective Earth Engine ImageCollections
+    desc = """
+    CLI for checking on missing images in an EE imageCollection - checks against a set of images that were supposed to have been uploaded by ee_upload_Wx.py
 
-        e.x. want to upload all slope files on bucket into a slope ImageCollection
-            ee_upload_vuln_files.py slope mean
+    Usage python check_wx_uploads.py project wx year_st year_end {--reupload}
+
+    example: python check_wx_uploads.py pyregence-ee precip 2011 2012 --reupload
+    
+    set --reupload flag if you want to send the img upload tasks, otherwise it just lists the files that are missing
+    
     """
+    
     parser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter, description=textwrap.dedent(desc))
     parser.add_argument("project", type=str,help='-earthengine project to work in')
     parser.add_argument("wx",type=str,help='-weather variable')
@@ -48,7 +55,6 @@ if __name__ == "__main__":
     import subprocess
     
     gs_root = 'gs://landfire/weather/merged'
-    product_list = ['precip']
     
     years = range(year_st,year_end)
     
@@ -66,21 +72,33 @@ if __name__ == "__main__":
             list_of_files_gs = [os.path.basename(f).split('.')[0] for f in list_of_files_gs]
             list_of_imgs_ee = [os.path.basename(f) for f in list_of_imgs_ee]
 
-            left_out = [os.path.join(gs_root, f[0:6], f) for f in list_of_files_gs if f not in list_of_imgs_ee]
-            logger.info(f'gs files not in its ee imgcollection:\n{left_out}')
+            left_out_files = [(gs_root  + '/' + f[0:6] + '/'+ f) for f in list_of_files_gs if f not in list_of_imgs_ee]
+            len_files = len(left_out_files)
+            logger.info(f'gs files not in its ee imgcollection:{len_files}')
             
+            collection_path = f'projects/{project}/assets/conus/weather/{wx}/{year}'
+
             # re-upload
-            collection_path = f'projects/pyregence-ee/assets/conus/weather/{wx}/{year}'
             if reupload:
-                for f in left_out:
-                    asset_name = os.path.basename(f).split('.tif')[0]
-                    ee_upload_cmd = f'earthengine upload image --asset_id={collection_path}/{asset_name} --pyramiding_policy=mean --bands={wx} {f}.tif'
-                    logger.info(ee_upload_cmd)
+                for file in left_out_files:
+                    #logger.info(file)
+                    asset_name = os.path.basename(file).split('.tif')[0]
+                    ee_upload_cmd = f'earthengine upload image --asset_id={collection_path}/{asset_name} --pyramiding_policy=mean --bands={wx} {file}.tif'
+                    #logger.info(ee_upload_cmd)
                     proc = subprocess.Popen(
                             ee_upload_cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT
                             )
             
                     out, err = proc.communicate()
+
+                    current_file_index = left_out_files.index(file)
+                    if current_file_index == 0:
+                        logger.info(f"Starting ingestion 1/{len_files}")
+                    elif current_file_index % 250 == 0:
+                        logger.info(
+                            f"Started {current_file_index}/{len_files}, Remaining tasks: {len_files-current_file_index}"
+                        )
+                    
+                logger.info(f"///////// FIN //////////////")
+                    
             
-        #break
-# %%
