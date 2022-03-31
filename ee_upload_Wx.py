@@ -100,10 +100,11 @@ if __name__ == "__main__":
     import argparse
     import textwrap
 
-    desc = """CLI for uploading Vulnerability tiled images into respective Earth Engine ImageCollections
-  
-      e.x. want to upload all slope files on bucket into a slope ImageCollection
-           ee_upload_vuln_files.py slope mean
+    desc = """ CLI for batch uploading A LOT of images into EE imageCollections, here specifically weather timeseries data
+    
+    Usage python check_wx_uploads.py project wx year_st year_end {--reupload}
+
+    example: python check_wx_uploads.py pyregence-ee precip 2011 2012 --reupload
   """
     parser = argparse.ArgumentParser(
         formatter_class=argparse.RawDescriptionHelpFormatter,
