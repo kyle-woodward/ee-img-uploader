@@ -92,7 +92,7 @@ def batch_upload_img_to_imgColl(project: str, product: str, pyramid: str, year: 
             logger.info(
                 f"Started {current_file_index}/{len_files}, Remaining tasks: {len_files-current_file_index}"
             )
-
+        
     logger.info(f"///////// FIN //////////////")
 
 
@@ -111,14 +111,21 @@ if __name__ == "__main__":
         description=textwrap.dedent(desc),
     )
     parser.add_argument("project", help="-ee project to work in")
-    parser.add_argument(
-        "product", help="-data product to retrieve from the google storage bucket"
-    )
-    parser.add_argument(
-        "pyramid", help="-pyramiding policy for the uploaded asset, ex: mean, mode"
-    )
+    parser.add_argument("product", help="-data product to retrieve from the google storage bucket")
+    parser.add_argument("pyramid", help="-pyramiding policy for the uploaded asset, ex: mean, mode")
     parser.add_argument("year", help="-year group")
-
+    parser.add_argument("-a","--authenticate",dest="auth",action="store_true",help="prompt authentication pop-up to choose which EE acct to use",)
     args = parser.parse_args()
+    
+    parser.set_defaults(auth=False)
+
+    #prompt user interactive authentication
+    if args.auth:
+        logger.info("Choose your EE account in the Authentication pop-up and paste the OAuth token in the console")
+        proc = subprocess.Popen(
+            'earthengine authenticate', shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT
+            )
+
+        out, err = proc.communicate()
 
     batch_upload_img_to_imgColl(args.project, args.product, args.pyramid, args.year)

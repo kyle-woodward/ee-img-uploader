@@ -1,6 +1,7 @@
 #%%
 
 import logging
+import subprocess
 
 logging.basicConfig(
     format="%(asctime)s %(message)s",
@@ -17,9 +18,9 @@ if __name__ == "__main__":
     desc = """
     CLI for checking on missing images in an EE imageCollection - checks against a set of images that were supposed to have been uploaded by ee_upload_Wx.py
 
-    Usage python check_wx_uploads.py project wx year_st year_end {--reupload}
+    Usage python check_wx_uploads.py project wx year_st year_end {--reupload} {--authenticate}
 
-    example: python check_wx_uploads.py pyregence-ee precip 2011 2012 --reupload
+    example: python check_wx_uploads.py pyregence-ee precip 2011 2012 --reupload --authenticate
     
     set --reupload flag if you want to send the img upload tasks, otherwise it just lists the files that are missing
     
@@ -30,23 +31,29 @@ if __name__ == "__main__":
     parser.add_argument("wx",type=str,help='-weather variable')
     parser.add_argument("year_st", type=int, help='-year start')
     parser.add_argument("year_end",type=int, help='-year end')
-    parser.add_argument(
-        "-r",
-        "--reupload",
-        dest="reupload",
-        action="store_true",
-        help="flag to reupload missing files the script finds",
-    )
+    parser.add_argument("-r","--reupload",dest="reupload",action="store_true",help="flag to reupload missing files the script finds",)
+    parser.add_argument("-a","--authenticate",dest="auth",action="store_true",help="prompt authentication pop-up to choose which EE acct to use",)
+
     args = parser.parse_args()
     
     parser.set_defaults(reupload=False)
-
+    parser.set_defaults(auth=False)
+    
     project = args.project
     wx = args.wx
     year_st = args.year_st
     year_end = args.year_end
     reupload = args.reupload
     
+    #prompt user interactive authentication
+    if args.auth:
+        logger.info("Choose your EE account in the Authentication pop-up and paste the OAuth token in the console")
+        proc = subprocess.Popen(
+            'earthengine authenticate', shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT
+            )
+
+        out, err = proc.communicate()
+
     asset_base = f'projects/{project}/assets/conus/weather'
 
 

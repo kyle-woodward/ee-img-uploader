@@ -32,18 +32,25 @@ if __name__ == "__main__":
     import argparse
     import textwrap
 
-    desc = """CLI for uploading Vulnerability tiled images into respective Earth Engine ImageCollections
+    desc = """CLI for exporting statistical reductions of large imgCollections (currently 10th percentile, median, 90th percentile)
 
-        e.x. want to upload all slope files on bucket into a slope ImageCollection
-            ee_upload_vuln_files.py slope mean
+    Usage: python Wx_stat_derivatives.py project wx year {--authenticate}
+    Example: python Wx_stat_derivatives.py pyregence-ee precip 2011 --authenticate
+
+    project - ee project to work in
+    wx - data product string
+    year - which year's imgCollection to reduce
     """
     parser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter, description=textwrap.dedent(desc))
     parser.add_argument("project", help='-earthengine project to work in')
     parser.add_argument("wx",help='-weather variable')
     parser.add_argument("year", help='-year group')
+    parser.add_argument("-a","--authenticate",dest="auth",action="store_true",help="prompt authentication pop-up to choose which EE acct to use",)
 
     args = parser.parse_args()
     
+    parser.set_defaults(auth=False)
+
     project = args.project
     wx = args.wx
     year = args.year
