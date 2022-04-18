@@ -69,13 +69,17 @@ def wait_until_completed(task_list: list, project: str, count: int) -> list:
     seconds_to_sleep = 10
     while len(task_list) > in_size - count:
         time.sleep(seconds_to_sleep)
-        logger.info(f"waiting {seconds_to_sleep} seconds while tasks finish ingesting")
+        logger.info(
+            f"waiting {seconds_to_sleep} seconds while tasks finish ingesting"
+        )
         task_list = remove_finished_tasks(task_list, project)
 
     return task_list
 
 
-def batch_upload_img_to_imgColl(project: str, product: str, pyramid: str, year: int):
+def batch_upload_img_to_imgColl(
+    project: str, product: str, pyramid: str, year: int
+):
 
     pyramid = str.lower(pyramid)
 
@@ -84,7 +88,10 @@ def batch_upload_img_to_imgColl(project: str, product: str, pyramid: str, year: 
     regex = f"{product}*"
     gsutil_ls_cmd = f"gsutil ls {gs_root}/{year}*/*{regex}.tif"
     proc = subprocess.Popen(
-        gsutil_ls_cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT
+        gsutil_ls_cmd,
+        shell=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
     )
     out, err = proc.communicate()
 
@@ -102,7 +109,9 @@ def batch_upload_img_to_imgColl(project: str, product: str, pyramid: str, year: 
     collection_path = f"{folder_path}/{year}"
     if not ee_path_exists(collection_path):
         # if an img collection has not been made for it, create it
-        create_collection_cmd = f"earthengine create collection {collection_path}"
+        create_collection_cmd = (
+            f"earthengine create collection {collection_path}"
+        )
 
         logger.info(f"Creating Image Collection at {collection_path}")
 
@@ -183,10 +192,12 @@ if __name__ == "__main__":
     )
     parser.add_argument("project", help="-ee project to work in")
     parser.add_argument(
-        "product", help="-data product to retrieve from the google storage bucket"
+        "product",
+        help="-data product to retrieve from the google storage bucket",
     )
     parser.add_argument(
-        "pyramid", help="-pyramiding policy for the uploaded asset, ex: mean, mode"
+        "pyramid",
+        help="-pyramiding policy for the uploaded asset, ex: mean, mode",
     )
     parser.add_argument("year", help="-year group")
     parser.add_argument(
@@ -214,4 +225,6 @@ if __name__ == "__main__":
 
         out, err = proc.communicate()
 
-    batch_upload_img_to_imgColl(args.project, args.product, args.pyramid, args.year)
+    batch_upload_img_to_imgColl(
+        args.project, args.product, args.pyramid, args.year
+    )
