@@ -68,13 +68,13 @@ def wait_until_completed(task_list: list, project: str, count: int) -> list:
     seconds_to_sleep = 300
     target_task_list_size = in_size - count
     while len(task_list) > target_task_list_size:
-        time.sleep(seconds_to_sleep)
         logger.info(
             f"waiting {seconds_to_sleep / 60} minutes while tasks finish ingesting"
         )
         logger.info(
             f"task list size: {len(task_list)}, target task list size: {target_task_list_size}"
         )
+        time.sleep(seconds_to_sleep)
         task_list = remove_finished_tasks(task_list, project)
 
     return task_list
