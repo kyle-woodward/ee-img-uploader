@@ -151,7 +151,6 @@ def batch_upload_img_to_imgColl(
             # add the task id to the stack
             task_id = parse_task_response(out)
             running_tasks.append(task_id)
-            logger.info(f"adding {task_id}")
 
         # check how many tasks have been submitted
         # the maximum number of tasks to have in the pipeline at one time
