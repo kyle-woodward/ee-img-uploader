@@ -4,6 +4,7 @@ import sys
 import subprocess
 import logging
 import ee
+import time
 
 ee.Initialize()
 
@@ -37,6 +38,43 @@ def make_folders(path: str):
         subprocess.run(cmd)
 
 
+def parse_task_response(response: str):
+    """returns the task id from an ee upload tast initiated via the ee cli.
+
+    Args:
+        response (str): Output from EE cli task (e.g. Started upload task with ID: 7TCCSJHNN2OIZTUSZF74ZEUC)
+
+    Returns:
+        str: the task id (e.g 7TCCSJHNN2OIZTUSZF74ZEUC)
+    """
+    return response.split(" ")[-1].strip()
+
+
+def remove_finished_tasks(task_list: list, project: str) -> list:
+    # project = "pyregence-ee"
+    # operation = "VDCQ5PSQESNLU2ENMVMP46JY"
+    stack = []
+    for operation in task_list:
+        time.sleep(3)
+        op_str = f"projects/{project}/operations/{operation}"
+        logger.info(f"{type(op_str)}, {op_str}, {type(project)}")
+        tasks = ee.data.getOperation(op_str)
+        if tasks["metadata"]["state"] != "SUCCEEDED":
+            stack.append(operation)
+    return stack
+
+
+def wait_until_completed(task_list: list, project: str, count: int) -> list:
+    in_size = len(task_list)
+    seconds_to_sleep = 10
+    while len(task_list) > in_size - count:
+        time.sleep(seconds_to_sleep)
+        logger.info(f"waiting {seconds_to_sleep} seconds while tasks finish ingesting")
+        task_list = remove_finished_tasks(task_list, project)
+
+    return task_list
+
+
 def batch_upload_img_to_imgColl(project: str, product: str, pyramid: str, year: int):
 
     pyramid = str.lower(pyramid)
@@ -62,35 +100,63 @@ def batch_upload_img_to_imgColl(project: str, product: str, pyramid: str, year: 
     make_folders(folder_path)
 
     collection_path = f"{folder_path}/{year}"
+    if not ee_path_exists(collection_path):
+        # if an img collection has not been made for it, create it
+        create_collection_cmd = f"earthengine create collection {collection_path}"
 
-    # if an img collection has not been made for it, create it
-    create_collection_cmd = f"earthengine create collection {collection_path}"
+        logger.info(f"Creating Image Collection at {collection_path}")
 
-    logger.info(f"Creating Image Collection at {collection_path}")
-
-    proc = subprocess.Popen(
-        create_collection_cmd,
-        shell=True,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT,
-    )
-    out, err = proc.communicate()
+        proc = subprocess.Popen(
+            create_collection_cmd,
+            shell=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+        )
+        out, err = proc.communicate()
 
     # for each tif file in list of product files on bucket, start an upload task to upload to the imgColl
-    for file in files:
+    running_tasks = []
+
+    for file in files[3:7]:
         asset_name = os.path.basename(file).split(".")[0]
 
         ee_upload_cmd = f"earthengine upload image --force --asset_id={collection_path}/{asset_name} --pyramiding_policy={pyramid} --bands={product} {file}"
 
         proc = subprocess.Popen(
-            ee_upload_cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT
+            ee_upload_cmd,
+            shell=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
         )
 
         out, err = proc.communicate()
+
+        # catch errors and log it to console
         if err:
             logger.info(f"ERROR {err}")
+        else:
+            # add the task id to the stack
+            task_id = parse_task_response(out)
+            running_tasks.append(task_id)
+            logger.info(f"adding {task_id}")
+
+        # check how many tasks have been submitted
+        task_threshold = 2750
+        task_wait_until_completed = 300
+        if len(running_tasks) > task_threshold:
+            logger.info(
+                f"task threshold met, waiting until {task_wait_until_completed / 60} minutes tasks are ingested."
+            )
+            # clean task list
+            running_tasks = remove_finished_tasks(running_tasks, project)
+            # wait until 200 tasks complete
+            running_tasks = wait_until_completed(
+                running_tasks, project, task_wait_until_completed
+            )
 
         current_file_index = files.index(file)
+
         if current_file_index == 0:
             logger.info(f"Starting ingestion 1/{len_files}")
         elif current_file_index % 250 == 0:
@@ -98,7 +164,7 @@ def batch_upload_img_to_imgColl(project: str, product: str, pyramid: str, year: 
                 f"Started {current_file_index}/{len_files}, Remaining tasks: {len_files-current_file_index}"
             )
 
-    logger.info(f"///////// FIN //////////////")
+    logger.info("///////// FIN //////////////")
 
 
 if __name__ == "__main__":
@@ -107,9 +173,9 @@ if __name__ == "__main__":
 
     desc = """ CLI for batch uploading A LOT of images into EE imageCollections, here specifically weather timeseries data
     
-    Usage python ee_upload_Wx.py project wx year_st year_end {--reupload}
+    Usage python ee_upload_Wx.py project wx pyramiding year_st 
 
-    example: python ee_upload_Wx.py pyregence-ee precip 2011 2012 --reupload
+    example: python ee_upload_Wx.py pyregence-ee precip mean 2017
   """
     parser = argparse.ArgumentParser(
         formatter_class=argparse.RawDescriptionHelpFormatter,
