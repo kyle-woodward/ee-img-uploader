@@ -57,7 +57,6 @@ def remove_finished_tasks(task_list: list, project: str) -> list:
     for operation in task_list:
         time.sleep(3)
         op_str = f"projects/{project}/operations/{operation}"
-        logger.info(f"{type(op_str)}, {op_str}, {type(project)}")
         tasks = ee.data.getOperation(op_str)
         if tasks["metadata"]["state"] != "SUCCEEDED":
             stack.append(operation)
@@ -66,11 +65,15 @@ def remove_finished_tasks(task_list: list, project: str) -> list:
 
 def wait_until_completed(task_list: list, project: str, count: int) -> list:
     in_size = len(task_list)
-    seconds_to_sleep = 10
-    while len(task_list) > in_size - count:
+    seconds_to_sleep = 300
+    target_task_list_size = in_size - count
+    while len(task_list) > target_task_list_size:
         time.sleep(seconds_to_sleep)
         logger.info(
-            f"waiting {seconds_to_sleep} seconds while tasks finish ingesting"
+            f"waiting {seconds_to_sleep / 60} minutes while tasks finish ingesting"
+        )
+        logger.info(
+            f"task list size: {len(task_list)}, target task list size: {target_task_list_size}"
         )
         task_list = remove_finished_tasks(task_list, project)
 
@@ -126,7 +129,7 @@ def batch_upload_img_to_imgColl(
     # for each tif file in list of product files on bucket, start an upload task to upload to the imgColl
     running_tasks = []
 
-    for file in files[3:7]:
+    for file in files:
         asset_name = os.path.basename(file).split(".")[0]
 
         ee_upload_cmd = f"earthengine upload image --force --asset_id={collection_path}/{asset_name} --pyramiding_policy={pyramid} --bands={product} {file}"
@@ -151,15 +154,17 @@ def batch_upload_img_to_imgColl(
             logger.info(f"adding {task_id}")
 
         # check how many tasks have been submitted
+        # the maximum number of tasks to have in the pipeline at one time
         task_threshold = 2750
+        # the number of tasks that need to finish ingestion before adding more to the pipeline
         task_wait_until_completed = 300
         if len(running_tasks) > task_threshold:
             logger.info(
-                f"task threshold met, waiting until {task_wait_until_completed / 60} minutes tasks are ingested."
+                f"task threshold met, waiting until {task_wait_until_completed} tasks are ingested."
             )
             # clean task list
             running_tasks = remove_finished_tasks(running_tasks, project)
-            # wait until 200 tasks complete
+            # wait until tasks complete
             running_tasks = wait_until_completed(
                 running_tasks, project, task_wait_until_completed
             )
