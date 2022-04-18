@@ -3,6 +3,9 @@ import os
 import sys
 import subprocess
 import logging
+import ee
+
+ee.Initialize()
 
 logging.basicConfig(
     format="%(asctime)s %(message)s",
@@ -84,6 +87,8 @@ def batch_upload_img_to_imgColl(project: str, product: str, pyramid: str, year: 
         )
 
         out, err = proc.communicate()
+        if err:
+            logger.info(f"ERROR {err}")
 
         current_file_index = files.index(file)
         if current_file_index == 0:
@@ -92,7 +97,7 @@ def batch_upload_img_to_imgColl(project: str, product: str, pyramid: str, year: 
             logger.info(
                 f"Started {current_file_index}/{len_files}, Remaining tasks: {len_files-current_file_index}"
             )
-        
+
     logger.info(f"///////// FIN //////////////")
 
 
@@ -102,29 +107,44 @@ if __name__ == "__main__":
 
     desc = """ CLI for batch uploading A LOT of images into EE imageCollections, here specifically weather timeseries data
     
-    Usage python check_wx_uploads.py project wx year_st year_end {--reupload}
+    Usage python ee_upload_Wx.py project wx year_st year_end {--reupload}
 
-    example: python check_wx_uploads.py pyregence-ee precip 2011 2012 --reupload
+    example: python ee_upload_Wx.py pyregence-ee precip 2011 2012 --reupload
   """
     parser = argparse.ArgumentParser(
         formatter_class=argparse.RawDescriptionHelpFormatter,
         description=textwrap.dedent(desc),
     )
     parser.add_argument("project", help="-ee project to work in")
-    parser.add_argument("product", help="-data product to retrieve from the google storage bucket")
-    parser.add_argument("pyramid", help="-pyramiding policy for the uploaded asset, ex: mean, mode")
+    parser.add_argument(
+        "product", help="-data product to retrieve from the google storage bucket"
+    )
+    parser.add_argument(
+        "pyramid", help="-pyramiding policy for the uploaded asset, ex: mean, mode"
+    )
     parser.add_argument("year", help="-year group")
-    parser.add_argument("-a","--authenticate",dest="auth",action="store_true",help="prompt authentication pop-up to choose which EE acct to use",)
+    parser.add_argument(
+        "-a",
+        "--authenticate",
+        dest="auth",
+        action="store_true",
+        help="prompt authentication pop-up to choose which EE acct to use",
+    )
     args = parser.parse_args()
-    
+
     parser.set_defaults(auth=False)
 
-    #prompt user interactive authentication
+    # prompt user interactive authentication
     if args.auth:
-        logger.info("Choose your EE account in the Authentication pop-up and paste the OAuth token in the console")
+        logger.info(
+            "Choose your EE account in the Authentication pop-up and paste the OAuth token in the console"
+        )
         proc = subprocess.Popen(
-            'earthengine authenticate', shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT
-            )
+            "earthengine authenticate",
+            shell=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+        )
 
         out, err = proc.communicate()
 
