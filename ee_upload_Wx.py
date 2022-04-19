@@ -55,7 +55,6 @@ def remove_finished_tasks(task_list: list, project: str) -> list:
     # operation = "VDCQ5PSQESNLU2ENMVMP46JY"
     stack = []
     for operation in task_list:
-        time.sleep(3)
         op_str = f"projects/{project}/operations/{operation}"
         tasks = ee.data.getOperation(op_str)
         if tasks["metadata"]["state"] != "SUCCEEDED":
