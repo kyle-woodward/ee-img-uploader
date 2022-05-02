@@ -26,7 +26,7 @@ if __name__ == "__main__":
 
     desc = """CLI for exporting statistical reductions of large imgCollections (currently 10th percentile, median, 90th percentile)
 
-    Usage: python imgColl_stat_derivatives.py project wx year {--authenticate}
+    Usage: python imgColl_stat_derivatives.py project product year {--authenticate}
     Example: python imgColl_stat_derivatives.py pyregence-ee precip 2011 --authenticate
 
     project - ee project your imgColl is in

@@ -18,7 +18,7 @@ if __name__ == "__main__":
     desc = """
     CLI for checking on missing images in an EE imageCollection - checks against a set of images that were supposed to have been uploaded by ee_upload_imgs.py
 
-    Usage python check_img_uploads.py project wx year_st year_end {--reupload} {--authenticate}
+    Usage python check_img_uploads.py project product year_st year_end {--reupload} {--authenticate}
 
     example: To check on 2011 uploads...
     python check_img_uploads.py pyregence-ee precip 2011 2012 --reupload --authenticate
