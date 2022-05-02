@@ -1,10 +1,10 @@
-# ee-scripts
+# ee-img-uploader
 
 ## Upload workflow
 
-1. upload - ee_upload_Wx.py
-2. verify - check_wx_uploads.py
-3. reduce - Wx_stat_derivatives.py
+1. upload - ee_upload_imgs.py
+2. verify - check_img_uploads.py
+3. reduce - imgColl_stat_derivatives.py
 
 ### upload - ee_upload_Wx.py
 
