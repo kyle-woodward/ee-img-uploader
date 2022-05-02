@@ -86,7 +86,7 @@ def batch_upload_img_to_imgColl(
     pyramid = str.lower(pyramid)
 
     # get list of files for a given product
-    gs_root = "gs://landfire/weather/merged"
+    gs_root = "gs://landfire/weather/merged" # will need to change this to use another bucket
     regex = f"{product}*"
     gsutil_ls_cmd = f"gsutil ls {gs_root}/{year}*/*{regex}.tif"
     proc = subprocess.Popen(
@@ -185,24 +185,24 @@ if __name__ == "__main__":
 
     desc = """ CLI for batch uploading A LOT of images into EE imageCollections, here specifically weather timeseries data
     
-    Usage python ee_upload_Wx.py project wx pyramiding year_st 
+    Usage python ee_upload_imgs.py project product pyramiding year_st 
 
-    example: python ee_upload_Wx.py pyregence-ee precip mean 2017
+    example: python ee_upload_imgs.py pyregence-ee precip mean 2017
   """
     parser = argparse.ArgumentParser(
         formatter_class=argparse.RawDescriptionHelpFormatter,
         description=textwrap.dedent(desc),
     )
-    parser.add_argument("project", help="-ee project to work in")
+    parser.add_argument("project", help="-ee project to upload assets to")
     parser.add_argument(
         "product",
-        help="-data product to retrieve from the google storage bucket",
+        help="-img collection product (file's basename e.g. precip)",
     )
     parser.add_argument(
         "pyramid",
         help="-pyramiding policy for the uploaded asset, ex: mean, mode",
     )
-    parser.add_argument("year", help="-year group")
+    parser.add_argument("year", help="-year imgColl to upload (assumes each imgColl is one year's worth of data)")
     parser.add_argument(
         "-a",
         "--authenticate",

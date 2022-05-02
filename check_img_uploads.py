@@ -16,13 +16,15 @@ if __name__ == "__main__":
     import textwrap
 
     desc = """
-    CLI for checking on missing images in an EE imageCollection - checks against a set of images that were supposed to have been uploaded by ee_upload_Wx.py
+    CLI for checking on missing images in an EE imageCollection - checks against a set of images that were supposed to have been uploaded by ee_upload_imgs.py
 
-    Usage python check_wx_uploads.py project wx year_st year_end {--reupload} {--authenticate}
+    Usage python check_img_uploads.py project wx year_st year_end {--reupload} {--authenticate}
 
-    example: python check_wx_uploads.py pyregence-ee precip 2011 2012 --reupload --authenticate
+    example: python check_img_uploads.py pyregence-ee precip 2011 2012 --reupload --authenticate
     
     set --reupload flag if you want to send the img upload tasks, otherwise it just lists the files that are missing
+    
+    **assumes each imgColl is one year's worth of data
     
     """
 
@@ -30,10 +32,10 @@ if __name__ == "__main__":
         formatter_class=argparse.RawDescriptionHelpFormatter,
         description=textwrap.dedent(desc),
     )
-    parser.add_argument("project", type=str, help="-earthengine project to work in")
-    parser.add_argument("wx", type=str, help="-weather variable")
+    parser.add_argument("project", type=str, help="-earthengine project to upload assets to")
+    parser.add_argument("product", type=str, help="-img collection product (file's basename e.g. precip)")
     parser.add_argument("year_st", type=int, help="-year start")
-    parser.add_argument("year_end", type=int, help="-year end")
+    parser.add_argument("year_end", type=int, help="-year end (exclusive)")
     parser.add_argument(
         "-r",
         "--reupload",
@@ -55,13 +57,14 @@ if __name__ == "__main__":
     parser.set_defaults(auth=False)
 
     project = args.project
-    wx = args.wx
+    product = args.product
     year_st = args.year_st
     year_end = args.year_end
     reupload = args.reupload
+    auth = args.auth
 
     # prompt user interactive authentication
-    if args.auth:
+    if auth:
         logger.info(
             "Choose your EE account in the Authentication pop-up and paste the OAuth token in the console"
         )
@@ -86,7 +89,7 @@ if __name__ == "__main__":
 
     logger.info(years)
     for year in years:
-        regex = f"{wx}*"
+        regex = f"{product}*"
 
         list_of_files_gs = (
             os.popen(f"gsutil ls {gs_root}/{year}*/*{regex}.tif")
@@ -95,13 +98,13 @@ if __name__ == "__main__":
         )
         list_of_imgs_ee = (
             os.popen(
-                f"earthengine ls projects/{project}/assets/conus/weather/{wx}/{year}"
+                f"earthengine ls projects/{project}/assets/conus/weather/{product}/{year}"
             )
             .read()
             .split("\n")[0:-1]
         )
-        logger.info(f"{year} {wx} files on gs: {len(list_of_files_gs)}")
-        logger.info(f"{year} {wx} imgs on ee imgcoll: {len(list_of_imgs_ee)}")
+        logger.info(f"{year} {product} files on gs: {len(list_of_files_gs)}")
+        logger.info(f"{year} {product} imgs on ee imgcoll: {len(list_of_imgs_ee)}")
 
         if len(list_of_files_gs) != len(list_of_imgs_ee):
 
@@ -118,14 +121,14 @@ if __name__ == "__main__":
             len_files = len(left_out_files)
             logger.info(f"gs files not in its ee imgcollection:{len_files}")
 
-            collection_path = f"projects/{project}/assets/conus/weather/{wx}/{year}"
+            collection_path = f"projects/{project}/assets/conus/weather/{product}/{year}"
 
             # re-upload
             if reupload:
                 for file in left_out_files:
                     # logger.info(file)
                     asset_name = os.path.basename(file).split(".tif")[0]
-                    ee_upload_cmd = f"earthengine upload image --asset_id={collection_path}/{asset_name} --pyramiding_policy=mean --bands={wx} {file}.tif"
+                    ee_upload_cmd = f"earthengine upload image --asset_id={collection_path}/{asset_name} --pyramiding_policy=mean --bands={product} {file}.tif"
                     # logger.info(ee_upload_cmd)
                     proc = subprocess.Popen(
                         ee_upload_cmd,
