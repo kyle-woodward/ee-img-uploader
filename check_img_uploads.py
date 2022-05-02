@@ -20,7 +20,8 @@ if __name__ == "__main__":
 
     Usage python check_img_uploads.py project wx year_st year_end {--reupload} {--authenticate}
 
-    example: python check_img_uploads.py pyregence-ee precip 2011 2012 --reupload --authenticate
+    example: To check on 2011 uploads...
+    python check_img_uploads.py pyregence-ee precip 2011 2012 --reupload --authenticate
     
     set --reupload flag if you want to send the img upload tasks, otherwise it just lists the files that are missing
     
@@ -86,7 +87,7 @@ if __name__ == "__main__":
     gs_root = "gs://landfire/weather/merged"
 
     years = range(year_st, year_end)
-
+    
     logger.info(years)
     for year in years:
         regex = f"{product}*"
