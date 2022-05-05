@@ -1,5 +1,7 @@
 # ee-img-uploader
 
+![ee-uploader-gif](https://user-images.githubusercontent.com/51868526/167019407-830dfbe3-5284-4b0f-9b10-3d8450b0fe7a.gif)
+
 ## Upload workflow
 
 1. upload - ee_upload_imgs.py
